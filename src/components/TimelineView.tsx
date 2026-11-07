@@ -178,6 +178,7 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
   const rows = Math.max(1, layout.lanes);
   const totalW = scale.width + 24;
   const totalH = AXIS_H + TOP_PAD + rows * laneH;
+  const scrollerH = Math.min(viewH, Math.max(460, totalH + 24));
 
   // Keep "now" near the left edge until the user starts moving around
   // (the layout settles once the screen height is measured).
@@ -299,7 +300,7 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
       <div
         ref={scrollerRef}
         className="timeline__scroller"
-        style={{ height: viewH }}
+        style={{ height: scrollerH }}
         onPointerDown={onPointerDown}
         onClickCapture={onClickCapture}
       >
