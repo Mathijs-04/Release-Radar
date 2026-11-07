@@ -150,20 +150,21 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
       .filter((i) => i.rawR >= 0 || releaseState(i.entry.milestone.date) === 'overdue') // older releases: Agenda only
       .sort((a, b) => compareFuzzy(a.entry.milestone.date, b.entry.milestone.date));
 
-    const packGroup = (items: typeof raw) => {
-      const lefts = spreadCards(items, scale, { cardW, gap: GAP, lanes: visibleLanes });
+    const packGroup = (items: typeof raw, lanes: number) => {
+      const lefts = spreadCards(items, scale, { cardW, gap: GAP, lanes });
       // Only cards take up room in a row; bands may run underneath later cards.
       return packLanes(
         items.map((item, i) => ({ ...item, left: lefts[i], right: lefts[i] + cardW })),
         GAP,
         // Rather slide a card a bit to the right than push it into a row off screen.
-        { maxLanes: visibleLanes, maxShift: cardW * 1.5 },
+        { maxLanes: lanes, maxShift: cardW * 1.5 },
       );
     };
     const specific = raw.filter((item) => !item.yearOnly);
     const yearOnly = raw.filter((item) => item.yearOnly);
-    const specificPacked = packGroup(specific);
-    const yearPacked = packGroup(yearOnly);
+    const specificPacked = packGroup(specific, visibleLanes);
+    // Year-only estimates share one dedicated row so a busy year stays compact.
+    const yearPacked = packGroup(yearOnly, 1);
     const placed = [
       ...specificPacked.placed.map((p) => ({ ...p, cardL: p.left })),
       ...yearPacked.placed.map((p) => ({ ...p, lane: p.lane + specificPacked.lanes, cardL: p.left })),
