@@ -138,6 +138,7 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
         return {
           entry,
           exact,
+          yearOnly: entry.milestone.date.precision === 'year',
           rawR,
           pinX: rawL,
           bandL,
@@ -149,16 +150,26 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
       .filter((i) => i.rawR >= 0 || releaseState(i.entry.milestone.date) === 'overdue') // older releases: Agenda only
       .sort((a, b) => compareFuzzy(a.entry.milestone.date, b.entry.milestone.date));
 
-    const lefts = spreadCards(raw, scale, { cardW, gap: GAP, lanes: visibleLanes });
-    // Only cards take up room in a row; bands may run underneath later cards.
-    const packed = packLanes(
-      raw.map((item, i) => ({ ...item, left: lefts[i], right: lefts[i] + cardW })),
-      GAP,
-      // Rather slide a card a bit to the right than push it into a row off screen.
-      { maxLanes: visibleLanes, maxShift: cardW * 1.5 },
-    );
-    const placed = packed.placed.map((p) => ({ ...p, cardL: p.left }));
-    const lanes = packed.lanes;
+    const packGroup = (items: typeof raw) => {
+      const lefts = spreadCards(items, scale, { cardW, gap: GAP, lanes: visibleLanes });
+      // Only cards take up room in a row; bands may run underneath later cards.
+      return packLanes(
+        items.map((item, i) => ({ ...item, left: lefts[i], right: lefts[i] + cardW })),
+        GAP,
+        // Rather slide a card a bit to the right than push it into a row off screen.
+        { maxLanes: visibleLanes, maxShift: cardW * 1.5 },
+      );
+    };
+    const specific = raw.filter((item) => !item.yearOnly);
+    const yearOnly = raw.filter((item) => item.yearOnly);
+    const specificPacked = packGroup(specific);
+    const yearPacked = packGroup(yearOnly);
+    const placed = [
+      ...specificPacked.placed.map((p) => ({ ...p, cardL: p.left })),
+      ...yearPacked.placed.map((p) => ({ ...p, lane: p.lane + specificPacked.lanes, cardL: p.left })),
+    ];
+    const yearOnlyLaneStart = specificPacked.lanes;
+    const lanes = specificPacked.lanes + yearPacked.lanes;
 
     // A band stops where the next card in its row begins (hovering shows it in full).
     const byLane = new Map<number, typeof placed>();
@@ -171,7 +182,7 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
         visibleBandR.set(p.entry.milestone.id, next ? Math.min(p.bandR, next.left - 6) : p.bandR);
       });
     }
-    return { placed, lanes, visibleBandR };
+    return { placed, lanes, yearOnlyLaneStart, visibleBandR };
   }, [scale, dated, cardW, pinOffset, visibleLanes]);
 
   const hiddenOld = dated.length - layout.placed.length; // exact releases older than the visible past
@@ -352,6 +363,14 @@ export function TimelineView({ entries, onOpen, onQuick }: Props) {
             />
           ))}
           <div className="tl-now" style={{ left: nowX }} />
+          {layout.yearOnlyLaneStart < layout.lanes && (
+            <div
+              className="tl-year-only-divider"
+              style={{ top: AXIS_H + TOP_PAD + layout.yearOnlyLaneStart * laneH, width: totalW }}
+            >
+              <span>Year-only estimates</span>
+            </div>
+          )}
 
           {/* Dated releases */}
           {layout.placed.map((item) => {

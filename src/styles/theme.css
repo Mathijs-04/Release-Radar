@@ -1409,6 +1409,25 @@ details[open] > summary.agenda__heading::after {
   box-shadow: 0 0 14px rgb(34 211 238 / 0.6);
   z-index: 1;
 }
+.tl-year-only-divider {
+  position: absolute;
+  z-index: 1;
+  border-top: 1px dashed rgb(139 92 246 / 0.35);
+  pointer-events: none;
+}
+.tl-year-only-divider span {
+  position: absolute;
+  top: 5px;
+  left: 12px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: rgb(12 15 30 / 0.9);
+  color: var(--violet-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 /* Bands: how wide = how uncertain */
 .tl-band {
